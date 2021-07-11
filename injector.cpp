@@ -18,8 +18,6 @@ int main() {
 	std::cout << "github.com/robertmotr" << std::endl << std::endl;
 	std::cout << "Select a DLL file to inject." << std::endl;
 
-	Sleep(1500);
-
 	// create and enter OPENFILENAMEA structure fields
 	OPENFILENAMEA ofnDialog;
 	char dllPath[MAX_PATH];
