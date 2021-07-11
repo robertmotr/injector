@@ -61,8 +61,8 @@ LPSTR getFile() {
 	while(true) {
 		// if user did not select a file (or error occurred, anything wacky)
 		if(GetOpenFileNameA(&ofnDialog) == 0) {
+			std::cout << "Please select a file." << std::endl;
 			std::cout << "CommDlg error code: 0x" << std::uppercase << std::hex << CommDlgExtendedError() << std::endl;
-			// MessageBoxA(NULL, "Please select a DLL.", "Error: Select valid DLL", 0);
 			system("PAUSE");
 		}
 		else {
