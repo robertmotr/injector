@@ -32,6 +32,11 @@ void displayProcesses() {
 	while(Process32Next(hSnap, &pe32)) {
 		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
 	}
+
+	std::cout << std::endl << "Press 1 to refresh process list" << std::endl;
+	std::cout << "Press 2 to change the DLL you want to inject" << std::endl;
+	std::cout << "Press 3 to continue" << std::endl;
+
 	CloseHandle(hSnap);
 }
 
@@ -56,8 +61,8 @@ LPSTR getFile() {
 	while(true) {
 		// if user did not select a file (or error occurred, anything wacky)
 		if(GetOpenFileNameA(&ofnDialog) == 0) {
-			MessageBoxA(NULL, "Please select a DLL.", "Error: Select valid DLL", 0);
 			std::cout << "CommDlg error code: 0x" << std::uppercase << std::hex << CommDlgExtendedError() << std::endl;
+			// MessageBoxA(NULL, "Please select a DLL.", "Error: Select valid DLL", 0);
 			system("PAUSE");
 		}
 		else {
@@ -65,6 +70,10 @@ LPSTR getFile() {
 			break;
 		}
 	};
+
+	std::cout << std::endl << "Press 1 to refresh process list" << std::endl;
+	std::cout << "Press 2 to change the DLL you want to inject" << std::endl;
+	std::cout << "Press 3 to continue" << std::endl;
 
 	return dllPath;
 }
@@ -78,21 +87,19 @@ int main() {
 	LPSTR dllPath = getFile();
 	displayProcesses();
 
-	std::cout << std::endl << "Press Escape to refresh process list" << std::endl;
-	std::cout << "Press Spacebar to change the DLL you want to inject" << std::endl;
-	std::cout << "Press Enter to continue" << std::endl;
-
 	while(true) {
-		if(GetKeyState(VK_ESCAPE) & 1) {
+
+		if(GetKeyState('1') & 0x8000) {
 			system("CLS");
 			displayProcesses();
 		}
-		else if(GetKeyState(VK_SPACE) & 1) {
+		else if(GetKeyState('2') & 0x8000) {
 			dllPath = getFile();
 		}
-		else if(GetKeyState(VK_RETURN) & 1) {
+		else if(GetKeyState('3') & 0x8000) {
 			break;
 		}
+		Sleep(200);
 	}
 
 	DWORD procId = 0;
