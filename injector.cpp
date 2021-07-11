@@ -156,7 +156,6 @@ int main() {
         VirtualFreeEx(hTarget, dllAlloc, strlen(dllPath) + 1, MEM_RELEASE);
         CloseHandle(remoteThread);
         CloseHandle(hTarget);
-		CloseHandle(hSnap);
     }
 	else {
 		displayError("getting handle to target process");
