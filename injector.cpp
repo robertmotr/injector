@@ -12,22 +12,42 @@ void displayError(std::string typefailure)
 	system("PAUSE");
 }
 
-int main() {
+void displayProcesses() {
+	// enumerate over all processes, do this by getting tlh32 snapshot first
+	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	PROCESSENTRY32 pe32;
+	if(!hSnap) { 
+		displayError("trying to call toolhelp32 snapshot in main()");
+		exit(-1);
+	}
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+	if(!Process32First(hSnap, &pe32)) {
+		displayError("trying to call Process32First() in main()");
+		exit(-1);
+	}
+	else {
+		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
+	}
 
-	std::cout << "This DLL injector was made by Robert Motrogeanu for educational purposes. Its contents can be found on my GitHub linked below." << std::endl;
-	std::cout << "github.com/robertmotr" << std::endl << std::endl;
-	std::cout << "Select a DLL file to inject." << std::endl;
+	while(Process32Next(hSnap, &pe32)) {
+		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
+	}
+	CloseHandle(hSnap);
+}
 
-	// create and enter OPENFILENAMEA structure fields
+LPSTR getFile() {
+
 	OPENFILENAMEA ofnDialog;
 	char dllPath[MAX_PATH];
 	ZeroMemory(&ofnDialog, sizeof(ofnDialog));
 	ofnDialog.lpstrFile = dllPath;
+	// set null byte to first position to prevent ofnDialog from initializing itself with this
 	ofnDialog.lpstrFile[0] = '\0';
 	ofnDialog.lpstrFilter = "Dynamic Link Libraries\0*.dll\0";
 	ofnDialog.nFilterIndex = 1;
 	ofnDialog.lStructSize = sizeof(ofnDialog);
 	ofnDialog.lpstrFileTitle = NULL;
+	ofnDialog.lpstrTitle = "Select a DLL to inject.";
 	ofnDialog.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_FORCESHOWHIDDEN;
 	ofnDialog.lpstrInitialDir = NULL;
 	ofnDialog.nMaxFile = MAX_PATH;
@@ -36,9 +56,9 @@ int main() {
 	while(true) {
 		// if user did not select a file (or error occurred, anything wacky)
 		if(GetOpenFileNameA(&ofnDialog) == 0) {
+			MessageBoxA(NULL, "Please select a DLL.", "Error: Select valid DLL", 0);
 			std::cout << "CommDlg error code: 0x" << std::uppercase << std::hex << CommDlgExtendedError() << std::endl;
 			system("PAUSE");
-			MessageBoxA(NULL, "Please select a DLL.", "Error: Select valid DLL", 0);
 		}
 		else {
 			std::cout << "Path of DLL: " << dllPath << " selected." << std::endl;
@@ -46,27 +66,33 @@ int main() {
 		}
 	};
 
-	LPSTR newDllPath = dllPath; // hack to take care of error
+	return dllPath;
+}
 
-	// enumerate over all processes, do this by getting tlh32 snapshot first
-	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	PROCESSENTRY32 pe32;
-	if(!hSnap) { 
-		displayError("trying to call toolhelp32 snapshot in main()");
-		return -1;
-	}
+int main() {
 
-	pe32.dwSize = sizeof(PROCESSENTRY32);
-	if(!Process32First(hSnap, &pe32)) {
-		displayError("trying to call Process32First() in main()");
-		return -1;
-	}
-	else {
-		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
-	}
+	std::cout << "This DLL injector was made by Robert Motrogeanu for educational purposes. Its contents can be found on my GitHub linked below." << std::endl;
+	std::cout << "github.com/robertmotr" << std::endl << std::endl;
+	std::cout << "Select a DLL file to inject." << std::endl;
 
-	while(Process32Next(hSnap, &pe32)) {
-		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
+	LPSTR dllPath = getFile();
+	displayProcesses();
+
+	std::cout << std::endl << "Press Escape to refresh process list" << std::endl;
+	std::cout << "Press Spacebar to change the DLL you want to inject" << std::endl;
+	std::cout << "Press Enter to continue" << std::endl;
+
+	while(true) {
+		if(GetKeyState(VK_ESCAPE) & 1) {
+			system("CLS");
+			displayProcesses();
+		}
+		else if(GetKeyState(VK_SPACE) & 1) {
+			dllPath = getFile();
+		}
+		else if(GetKeyState(VK_RETURN) & 1) {
+			break;
+		}
 	}
 
 	DWORD procId = 0;
@@ -102,7 +128,7 @@ int main() {
 
         // allocate size of dll path into process
 		// https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualallocex
-        LPVOID dllAlloc = VirtualAllocEx(hTarget, NULL, strlen(newDllPath) + 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        LPVOID dllAlloc = VirtualAllocEx(hTarget, NULL, strlen(dllPath) + 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 		if(!dllAlloc) {
 			displayError("calling VirtualAllocEx in main()");
@@ -110,7 +136,7 @@ int main() {
 		}
 
 		// write the dll path into the new allocated memory in the process
-		if(!WriteProcessMemory(hTarget, dllAlloc, newDllPath, strlen(newDllPath) + 1, NULL)) {
+		if(!WriteProcessMemory(hTarget, dllAlloc, dllPath, strlen(dllPath) + 1, NULL)) {
 			displayError("WPM dll path in main()");
 			return -1;
 		}
@@ -127,7 +153,7 @@ int main() {
         WaitForSingleObject(remoteThread, INFINITE);
 
 		// now that the DLL is injected, we can free the memory we allocated for the dll path
-        VirtualFreeEx(hTarget, dllAlloc, strlen(newDllPath) + 1, MEM_RELEASE);
+        VirtualFreeEx(hTarget, dllAlloc, strlen(dllPath) + 1, MEM_RELEASE);
         CloseHandle(remoteThread);
         CloseHandle(hTarget);
 		CloseHandle(hSnap);
