@@ -12,35 +12,11 @@ void displayError(std::string typefailure)
 	system("PAUSE");
 }
 
-void displayProcesses() {
-	// enumerate over all processes, do this by getting tlh32 snapshot first
-	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	PROCESSENTRY32 pe32;
-	if(!hSnap) { 
-		displayError("trying to call toolhelp32 snapshot in main()");
-		exit(-1);
-	}
-	pe32.dwSize = sizeof(PROCESSENTRY32);
-	if(!Process32First(hSnap, &pe32)) {
-		displayError("trying to call Process32First() in main()");
-		exit(-1);
-	}
-	else {
-		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
-	}
+int main() {
 
-	while(Process32Next(hSnap, &pe32)) {
-		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
-	}
-
-	std::cout << std::endl << "Press 1 to refresh process list" << std::endl;
-	std::cout << "Press 2 to change the DLL you want to inject" << std::endl;
-	std::cout << "Press 3 to continue" << std::endl;
-
-	CloseHandle(hSnap);
-}
-
-LPSTR getFile() {
+	std::cout << "This DLL injector was made by Robert Motrogeanu for educational purposes. Its contents can be found on my GitHub linked below." << std::endl;
+	std::cout << "github.com/robertmotr" << std::endl << std::endl;
+	std::cout << "Select a DLL file to inject." << std::endl;
 
 	OPENFILENAMEA ofnDialog;
 	char dllPath[MAX_PATH];
@@ -71,36 +47,26 @@ LPSTR getFile() {
 		}
 	};
 
-	std::cout << std::endl << "Press 1 to refresh process list" << std::endl;
-	std::cout << "Press 2 to change the DLL you want to inject" << std::endl;
-	std::cout << "Press 3 to continue" << std::endl;
-
-	return dllPath;
-}
-
-int main() {
-
-	std::cout << "This DLL injector was made by Robert Motrogeanu for educational purposes. Its contents can be found on my GitHub linked below." << std::endl;
-	std::cout << "github.com/robertmotr" << std::endl << std::endl;
-	std::cout << "Select a DLL file to inject." << std::endl;
-
-	LPSTR dllPath = getFile();
-	displayProcesses();
-
-	while(true) {
-
-		if(GetKeyState('1') & 0x8000) {
-			system("CLS");
-			displayProcesses();
-		}
-		else if(GetKeyState('2') & 0x8000) {
-			dllPath = getFile();
-		}
-		else if(GetKeyState('3') & 0x8000) {
-			break;
-		}
-		Sleep(200);
+	// enumerate over all processes, do this by getting tlh32 snapshot first
+	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	PROCESSENTRY32 pe32;
+	if(!hSnap) { 
+		displayError("trying to call toolhelp32 snapshot in main()");
+		exit(-1);
 	}
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+	if(!Process32First(hSnap, &pe32)) {
+		displayError("trying to call Process32First() in main()");
+		exit(-1);
+	}
+	else {
+		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
+	}
+
+	while(Process32Next(hSnap, &pe32)) {
+		std::cout << "Process name: " << std::setw(40) << pe32.szExeFile << std::setw(40) << "Process ID: " << std::setw(40) << pe32.th32ProcessID << std::endl;
+	}
+	CloseHandle(hSnap);
 
 	DWORD procId = 0;
 	std::cout << std::endl;
@@ -135,7 +101,7 @@ int main() {
 
         // allocate size of dll path into process
 		// https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualallocex
-        LPVOID dllAlloc = VirtualAllocEx(hTarget, NULL, strlen(dllPath) + 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        LPVOID dllAlloc = VirtualAllocEx(hTarget, NULL, strlen(dllPath)+1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 		if(!dllAlloc) {
 			displayError("calling VirtualAllocEx in main()");
@@ -143,7 +109,7 @@ int main() {
 		}
 
 		// write the dll path into the new allocated memory in the process
-		if(!WriteProcessMemory(hTarget, dllAlloc, dllPath, strlen(dllPath) + 1, NULL)) {
+		if(!WriteProcessMemory(hTarget, dllAlloc, dllPath, strlen(dllPath)+1, NULL)) {
 			displayError("WPM dll path in main()");
 			return -1;
 		}
@@ -160,7 +126,10 @@ int main() {
         WaitForSingleObject(remoteThread, INFINITE);
 
 		// now that the DLL is injected, we can free the memory we allocated for the dll path
-        VirtualFreeEx(hTarget, dllAlloc, strlen(dllPath) + 1, MEM_RELEASE);
+        if(!VirtualFreeEx(hTarget, dllAlloc, 0, MEM_RELEASE)) {
+			displayError("calling VirtualFreeEx in main()");
+			return -1;
+		}
         CloseHandle(remoteThread);
         CloseHandle(hTarget);
     }
