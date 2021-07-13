@@ -14,15 +14,19 @@ Note that comdlg32.lib is required because I've decided to use GetOpenFileNameA(
 # Screenshots:
 
 ![Screenshot](https://github.com/robertmotr/injector/blob/main/screenshot1.PNG)
+
 Start-up text.
 
 ![Screenshot](https://github.com/robertmotr/injector/blob/main/screenshot2.PNG)
+
 Injector prompts you to select a DLL to inject.
 
 ![Screenshot](https://github.com/robertmotr/injector/blob/main/screenshot3.PNG)
+
 After selecting a DLL, the injector displays a list of all running processes and their associated PIDs. You will need to select a PID in order to inject into that process.
 
 ![Screenshot](https://github.com/robertmotr/injector/blob/main/screenshot4.PNG)
+
 After the injection is finished. In this demonstration, I used a dummy DLL for assault cube that when called displays a message box.
 
 
