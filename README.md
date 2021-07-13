@@ -1,7 +1,7 @@
 # dll-injector
  Easy to use Windows DLL injector that you can operate by command line. 
  
- This injector works firstly by opening a PROCESS_ALL_ACCESS handle to the user's desired target process. Then, we get a handle to the kernel32.dll module and find the address of the LoadLibraryA function. Considering kernel32.dll is mapped to the same address in every process' virtual memory, if we find the address of this function in the process we are operating in, the address of this function will be the same in the target process. We then allocate the size of the DLL's path as a string in the virtual memory of the target process, and write the DLL path in the process using WriteProcessMemory. Afterwards, we create a thread in the target process at the address of LoadLibraryA which executes the said function with the DLL path as a parameter.
+ This injector works firstly by opening a PROCESS_ALL_ACCESS handle to the user's desired target process. Then, we get a handle to the kernel32.dll module and find the address of the LoadLibraryA function. Considering kernel32.dll is mapped to the same address in every process' virtual memory, if we find the address of this function in the process we are operating in, the address of this function will be the same in the target process. We then allocate the size of the DLL's path in the virtual memory of the target process, and write the DLL path in the process using WriteProcessMemory. Afterwards, we create a thread in the target process at the address of LoadLibraryA which executes the said function with the DLL path as a parameter.
  
 # Compilation:
 
