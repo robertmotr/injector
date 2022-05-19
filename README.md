@@ -7,7 +7,7 @@
 
 I compiled this injector using Microsoft's MSVC compiler using the following options:
 
-cl.exe /EHsc /Wall injector.cpp user32.lib comdlg32.lib /link /out:injector.exe
+```cl.exe /EHsc /Wall injector.cpp user32.lib comdlg32.lib /link /out:injector.exe```
 
 Note that comdlg32.lib is required because I've #include'd commdlg.h and I've decided to use GetOpenFileNameA() and its associated struct OPENFILENAMEA.
 
